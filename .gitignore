@@ -1,0 +1,15 @@
+.env
+*pycache*
+*pytest*
+*build*
+*externals*
+*egg-info*
+.ipynb_checkpoints
+dist/*
+.vscode
+*DS_Store
+*data/*
+notebooks/*
+*.pt
+runs/*
+*.ipynb
