@@ -1,4 +1,6 @@
 import os 
+import sys
+sys.path.append(os.environ['MUSICFM_REPO_PATH'])
 import typing as tp
 
 import gin
@@ -9,7 +11,9 @@ import torchaudio
 from msclap import CLAP
 from musicfm.model.musicfm_25hz import MusicFM25Hz
 
-__all__ = ['End2EndCLAP', 'End2EndMusicFM', 'End2EndWav2Vec']
+__all__ = ['combine_fm_and_head']
+
+torch.hub.set_dir(os.environ['TORCH_HUB']) 
 
 class End2EndModel(nn.Module):
     """
@@ -47,7 +51,10 @@ class End2EndModel(nn.Module):
 
 @gin.configurable(module='models')
 class End2EndCLAP(End2EndModel):
-    def __init__(self, clap: nn.Module, head: nn.Module) -> None:
+    def __init__(self, head: nn.Module) -> None:
+        clap = CLAP(version='2022')
+        clap = clap.clap
+        delattr(clap, 'caption_encoder') 
         super().__init__(clap, head)
 
     def get_embedding(self, x: torch.Tensor)->torch.Tensor:
@@ -57,10 +64,15 @@ class End2EndCLAP(End2EndModel):
 @gin.configurable(module='models')
 class End2EndMusicFM(End2EndModel):
     def __init__(self, 
-                 musicfm: nn.Module,
                  head: nn.Module, 
                  layer_idx: int=-1, 
                  time_avg: bool=True) -> None:
+        musicfm_weights = os.environ['MUSICFM_WEIGHTS_PATH']
+        musicfm = MusicFM25Hz(
+            is_flash=False, 
+            stat_path=os.path.join(musicfm_weights, 'msd_stats.json'),
+            model_path=os.path.join(musicfm_weights, 'pretrained_msd.pt'),        
+        )
         super().__init__(musicfm, head)
         self.layer_idx = layer_idx
         self.time_avg = time_avg
@@ -74,10 +86,13 @@ class End2EndMusicFM(End2EndModel):
 @gin.configurable(module='models') 
 class End2EndWav2Vec(End2EndModel):
     def __init__(self, 
-                 wav2vec: nn.Module, 
                  head: nn.Module, 
                  layer_idx: int=-1, 
                  time_avg: bool=True) -> None:
+        bundle = torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H
+        sr = bundle.sample_rate 
+        gin.bind_parameter('%FM_SR', sr)
+        wav2vec = bundle.get_model()
         super().__init__(wav2vec, head)
         self.layer_idx = layer_idx
         self.time_avg = time_avg
@@ -87,3 +102,10 @@ class End2EndWav2Vec(End2EndModel):
         if self.time_avg:
             emb = emb.mean(1) # B T C -> B C
         return emb
+
+@gin.configurable(module='models')     
+def combine_fm_and_head(
+    head: nn.Module, 
+    end2end_class: End2EndModel, 
+    **kwargs) -> End2EndModel:
+    return end2end_class(head, **kwargs)

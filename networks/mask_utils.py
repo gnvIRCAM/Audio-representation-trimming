@@ -8,7 +8,7 @@ import torch.nn as nn
 
 from .mask_module import MaskModule
 
-__all__ = ['make_clap_masks', 'make_musicfm_masks', 'make_wav2vec_masks']
+__all__ = ['make_masks']
 
 def sequential_getattr(obj: tp.Any,
                        name: str
@@ -45,6 +45,10 @@ def sequential_setattr(obj: tp.Any,
             return sequential_setattr(getattr(obj, name), res, val)
         else:
             return sequential_setattr(obj[int(name)], res, val)
+        
+@gin.configurable(module='models', denylist=['model'])
+def make_masks(model, mask_builder):
+    return mask_builder(model)
 
 @gin.configurable(module='models', denylist=['model'])
 def make_clap_masks(model: nn.Module, 
@@ -312,3 +316,4 @@ def make_wav2vec_masks(model: nn.Module,
             if (layer_stop_idx!=-1) and (layer_idx>=layer_stop_idx):
                 break
     return model
+

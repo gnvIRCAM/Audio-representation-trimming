@@ -8,6 +8,7 @@ import torch.nn as nn
 from torch.optim import Adam, Optimizer
 import torch.utils
 import torch.utils.data
+from transformers import get_constant_schedule_with_warmup, get_constant_schedule
 
 def gather_masks(masked_model: nn.Module
                  ) -> tp.Dict[str, nn.Parameter]:
@@ -39,4 +40,11 @@ def make_optimizer(
                 'name': 'foundation_model'})
     return Adam(params, lr=lr, betas=[.9, .999])
 
+@gin.configurable(module='train', denylist=['optimizer'])
+def warmup_lr_scheduler(optimizer: torch.optim.Optimizer, 
+                        num_warmup: int):
+    return get_constant_schedule_with_warmup(optimizer, num_warmup)
 
+@gin.configurable(module='train', denylist=['optimizer'])
+def constant_lr_scheduler(optimizer: torch.optim.Optimizer):
+    return get_constant_schedule(optimizer)

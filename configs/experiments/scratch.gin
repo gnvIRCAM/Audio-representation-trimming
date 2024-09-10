@@ -1,0 +1,13 @@
+SPARSITY_TARGET = .5
+SPARSITY_WEIGHT = 100
+
+models.make_masks:
+    mask_module = @models.MaskModule
+
+train.make_sparsity_loss:
+    weight = %SPARSITY_WEIGHT
+    target = %SPARSITY_WEIGHT
+    power = 2
+
+train.make_losses:
+    sparsity_loss = @train.make_sparsity_loss

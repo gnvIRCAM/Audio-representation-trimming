@@ -1,0 +1,20 @@
+models.combine_fm_and_head:
+    end2end_class = @models.End2EndCLAP
+
+models.make_clap_masks:
+    layers = {'audio_encoder.base.conv_block1.bn1': {'num_features': 64}, 
+              'audio_encoder.base.conv_block1.bn2': {'num_features': 64},
+              'audio_encoder.base.conv_block2.bn1': {'num_features': 128},
+              'audio_encoder.base.conv_block2.bn2': {'num_features': 128},
+              'audio_encoder.base.conv_block3.bn1': {'num_features': 256},
+              'audio_encoder.base.conv_block3.bn2': {'num_features': 256},
+              'audio_encoder.base.conv_block4.bn1': {'num_features': 512},
+              'audio_encoder.base.conv_block4.bn2': {'num_features': 512},
+              'audio_encoder.base.conv_block5.bn1': {'num_features': 1024},
+              'audio_encoder.base.conv_block5.bn2': {'num_features': 1024},
+              'audio_encoder.base.conv_block6.bn1': {'num_features': 2048},
+              'audio_encoder.base.conv_block6.bn2': {'num_features': 2048},
+            }
+
+models.make_masks:
+    mask_builder = @models.make_clap_masks

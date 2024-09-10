@@ -1,0 +1,2 @@
+models.make_masks:
+    mask_module = @models.ScaleShift

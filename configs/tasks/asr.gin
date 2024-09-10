@@ -1,0 +1,13 @@
+include 'configs/models/heads/lstm.gin'
+
+models.combine_fm_and_head:
+    head = @models.BLSTM()    
+
+train.make_ctc_loss:
+    weight = 1
+    blank = 0
+    pad_token = 1
+
+train.make_losses:
+    task_loss = @train.make_ctc_loss
+

@@ -15,13 +15,14 @@ from ..metrics import compute_metrics
 from .utils import *
 
 @gin.configurable(module='train', denylist=['run_path', 'device'])
-class TrainerBase:
+class Trainer:
     def __init__(
         self, 
         run_path: str, 
         device: str | int, 
         losses, 
         lr, 
+        scheduler_fn, 
         num_steps, 
         log_steps, 
         val_steps, 
@@ -38,11 +39,12 @@ class TrainerBase:
         self.eval_metadata_path = os.path.join(run_path, 'eval.json')
         self.losses = losses
         self.losses_logs = {loss_name:[] for loss_name in self.losses.keys()}
-        self.lrr = lr
+        self.lr = lr
         self.num_steps = num_steps
         self.log_steps = log_steps
         self.val_steps = val_steps
         self.save_steps = save_steps
+        self.scheduler_fn = scheduler_fn
             
     def init_training(self):
         os.makedirs(self.run_path, exist_ok=True)
@@ -62,7 +64,7 @@ class TrainerBase:
         with open(self.eval_metadata_path, 'w') as f:
             json.dump(eval_metadata, f)
         
-    def train_step(self, x, labels, model, optimizer):
+    def train_step(self, x, labels, model, optimizer, scheduler):
         model = model.train()
         x = x.to(self.device)
         labels = labels.to(self.device)
@@ -76,6 +78,7 @@ class TrainerBase:
         model.zero_grad()
         tot_loss.backward()
         optimizer.step()
+        scheduler.step()
     
     @torch.no_grad()
     def log_step(self, step, epoch=None):
@@ -114,14 +117,15 @@ class TrainerBase:
         model = model.to(self.device)
         n_epochs = self.num_steps//len(train_loader)
         model.train()
-        optimizer = make_optimizer(model)
+        optimizer = make_optimizer(model, self.lr)
+        scheduler = self.scheduler_fn(optimizer)
         is_config_logged = False
         epoch = 0
         
         for step in tqdm(range(self.num_steps), desc=f'Train. epoch {epoch}/{n_epochs}, step {step+1}/{self.num_steps}'):
             epoch = (step//len(train_loader))+1
             x, label = next(cycle(train_loader))
-            self.train_step(x, label, model, optimizer)
+            self.train_step(x, label, model, optimizer, scheduler)
             
             if not is_config_logged:
                 self.log_config()
