@@ -8,3 +8,8 @@ train.make_cross_entropy_loss:
 
 train.make_losses:
     task_loss = @train.make_cross_entropy_loss
+
+train.Trainer.val_step:
+    metrics = {
+        'weighted_accuracy': @metrics.weighted_accuracy, 
+    }

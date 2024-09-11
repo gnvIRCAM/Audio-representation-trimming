@@ -49,7 +49,8 @@ class Trainer:
     def init_training(self):
         os.makedirs(self.run_path, exist_ok=True)
         self.logger = SummaryWriter(self.run_path)
-    
+
+    @gin.configurable(module='train', allowlist=['metrics'])
     @torch.no_grad()
     def val_step(self, step, model: nn.Module, val_loader, metrics):
         model.eval()

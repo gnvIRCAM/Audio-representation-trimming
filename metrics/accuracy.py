@@ -1,5 +1,6 @@
 import typing as tp 
 
+import gin 
 import sklearn.metrics
 import torch
 import torch.nn as nn 
@@ -17,6 +18,7 @@ def compute_accuracy(preds: torch.Tensor,
     mispreds = torch.where(preds!=labels, 1, 0).sum()
     return 1-(mispreds/num_samples)
 
+@gin.register(module='metrics')
 @torch.no_grad()
 def compute_weighted_accuracy(preds: torch.Tensor, 
                               labels: torch.Tensor)->float: 
@@ -26,6 +28,7 @@ def compute_weighted_accuracy(preds: torch.Tensor,
     weighted_acc = torcheval.metrics.Accuracy(num_classes=preds.shape[-1], average='weighted')
     return weighted_acc(preds, labels)
 
+@gin.register(module='metrics', allowlist=['do_sigmoid'])
 @torch.no_grad()
 def compute_average_precision(preds: torch.Tensor, 
                               labels: torch.Tensor, 
@@ -37,6 +40,7 @@ def compute_average_precision(preds: torch.Tensor,
     avg_score = sklearn.metrics.average_precision_score(labels, preds, average=None)
     return avg_score.mean()
 
+@gin.register(module='metrics')
 @torch.no_grad()
 def compute_auroc(preds: torch.Tensor, 
                   labels: torch.Tensor)->float: 
@@ -46,6 +50,7 @@ def compute_auroc(preds: torch.Tensor,
     binary_auroc.update(preds.permute(1, 0), labels.permute(1, 0))
     return binary_auroc.compute().mean().item()
 
+@gin.register(module='metrics', allowlist=['tokenizer'])
 @torch.no_grad()
 def compute_wer(preds: torch.Tensor, 
                 labels: torch.Tensor, 
@@ -55,8 +60,8 @@ def compute_wer(preds: torch.Tensor,
     preds = [p.cpu().tolist() for pred in preds for p in pred]
     labels = [l.cpu().tolist() for label in labels for l in label]
     for pred, label in zip(preds, labels):
-        txt_pred = tokenizer(pred, reverse=True)
-        txt_true = tokenizer(label, reverse=True)
+        txt_pred = tokenizer.decode_single(pred)
+        txt_true = tokenizer.decode_single(label)
         wer.update([txt_pred], [txt_true])
     return wer.compute().item()
 
