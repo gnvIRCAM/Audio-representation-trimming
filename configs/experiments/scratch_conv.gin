@@ -3,3 +3,8 @@ include 'configs/experiments/base.gin'
 models.make_masks:
     mask_module = @models.MaskModule
     skip = False
+
+train.make_optimizer:
+    exclude_masks = True
+    include_fm = True
+    denylist = @scratch_denylist

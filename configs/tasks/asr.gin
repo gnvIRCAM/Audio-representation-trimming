@@ -8,8 +8,7 @@ models.combine_fm_and_head:
 
 train.make_ctc_loss:
     weight = 1
-    blank = 0
-    pad_token = 1
+    tokenizer = @data.Tokenizer()
 
 train.make_losses:
     task_loss = @train.make_ctc_loss

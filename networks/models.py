@@ -11,7 +11,13 @@ import torchaudio
 from msclap import CLAP
 from musicfm.model.musicfm_25hz import MusicFM25Hz
 
-__all__ = ['combine_fm_and_head']
+__all__ = [
+    'combine_fm_and_head', 
+    'End2EndModel', 
+    'End2EndCLAP', 
+    'End2EndMusicFM', 
+    'End2EndWav2Vec'
+    ]
 
 torch.hub.set_dir(os.environ['TORCH_HUB']) 
 

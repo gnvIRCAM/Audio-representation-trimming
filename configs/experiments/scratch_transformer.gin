@@ -12,3 +12,8 @@ train.warmup_lr_scheduler:
 
 train.Trainer:
     scheduler_fn = @train.warmup_lr_scheduler
+
+train.make_optimizer:
+    exclude_masks = True
+    include_fm = True
+    denylist = @scratch_denylist

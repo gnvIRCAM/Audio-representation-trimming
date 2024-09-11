@@ -27,6 +27,15 @@ flags.DEFINE_string('input_path',
                      None,
                      help='Path to a directory containing audio files',
                      required=True)
+flags.DEFINE_string('dataset_name', 
+                    None, 
+                    required=True, 
+                    help="Name of the dataset to be processed \
+                        (from \
+                        nsynth, gtzan, mtt, \
+                        esc50, us8k, fsd, \
+                        libri, fluent, commands\
+                        )")
 flags.DEFINE_string('output_path',
                     ".",
                     help='Output directory for the dataset',
@@ -37,17 +46,11 @@ flags.DEFINE_integer('num_signal',
 flags.DEFINE_integer('num_cores',
                      8,
                      help='Number of cores for multiprocessing')
-flags.DEFINE_integer('sampling_rate',
-                     24000,
-                     help='Sampling rate to use during training')
 flags.DEFINE_integer('max_db_size',
                      180,
                      help='Maximum size (in GB) of the dataset')
-flags.DEFINE_integer('max_files',
-                     None,
-                     help='Take a random subset of the files')
 flags.DEFINE_bool('dyndb',
-                  default=False,
+                  default=True,
                   help="Allow the database to grow dynamically")
 
 
@@ -59,7 +62,6 @@ def load_audio_chunk(audio_file: tuple, n_signal: int,
                      sr: int) -> Iterable[np.ndarray]:
 
     path, metadata = audio_file
-
     # process = subprocess.Popen(
     #     [
     #         'ffmpeg', '-hide_banner', '-loglevel', 'panic', '-i', path, '-ac',
@@ -174,15 +176,6 @@ def main(dummy):
     metadata = [{"path": audio} for audio in audios]
 
     audios = list(zip(audios, metadata))
-    
-    print(len(audios), " audio files found")
-    
-    if FLAGS.max_files is not None and len(audios) > FLAGS.max_files:
-        indexes = np.random.choice(list(range(len(audios))), FLAGS.max_files, replace=False)
-        audios, metadata = np.array(audios)[indexes], np.array(metadata)[indexes]
-
-    print(len(audios), " audio files retained")
-    
     
     # load chunks
     chunks = flatmap(pool, chunk_load, audios)

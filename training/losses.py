@@ -51,7 +51,9 @@ def make_bce_loss(weight, device):
     return train_callback, 'BCE'
 
 @gin.configurable(module='train')
-def make_ctc_loss(weight, device, blank, pad_token):
+def make_ctc_loss(weight, device, tokenizer):
+    blank= tokenizer.tokens[tokenizer.blank_char]
+    pad_token= tokenizer.tokens[tokenizer.pad_char]
     loss_fn = nn.CTCLoss(blank=blank).to(device)
     def train_callback(pred: torch.Tensor, labels: torch.Tensor, model):
         pred = pred.permute(2, 0, 1) # T x B x N

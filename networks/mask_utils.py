@@ -50,7 +50,8 @@ def sequential_setattr(obj: tp.Any,
 def make_masks(model, mask_builder, skip=False):
     if skip:
         return model
-    return mask_builder(model)
+    model.foundation_model = mask_builder(model.foundation_model)
+    return model
 
 @gin.configurable(module='models', denylist=['model'])
 def make_clap_masks(model: nn.Module, 
