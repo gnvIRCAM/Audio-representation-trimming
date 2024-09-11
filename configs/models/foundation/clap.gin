@@ -1,5 +1,8 @@
+DATA_SR = 44100
+
 models.combine_fm_and_head:
     end2end_class = @models.End2EndCLAP
+    data_sr = %DATA_SR
 
 models.make_clap_masks:
     layers = {'audio_encoder.base.conv_block1.bn1': {'num_features': 64}, 
@@ -18,3 +21,6 @@ models.make_clap_masks:
 
 models.make_masks:
     mask_builder = @models.make_clap_masks
+
+trim.trim_model:
+    trimmer = @trim.trim_clap

@@ -47,3 +47,30 @@ class Tokenizer:
 
     def decode_multiple(self, x: torch.Tensor)-> tp.List[str]:
         return [self.decode_single(tokens) for tokens in x]
+
+def preprocess_nsynth():
+    pass
+
+def preprocess_gtzan():
+    pass
+
+def preprocess_mtt():
+    pass
+
+def preprocess_esc():
+    pass
+
+def preprocess_us8k():
+    pass
+
+def preprocess_fsd():
+    pass
+
+def preprocess_libri():
+    pass
+
+def preprocess_fluent():
+    pass
+
+def preprocess_commands():
+    pass

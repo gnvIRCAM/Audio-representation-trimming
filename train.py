@@ -1,8 +1,9 @@
 from absl import app, flags
 from dotenv import load_dotenv
-import os
-import sys
 load_dotenv('.env')
+import os
+from shutil import copyfile
+import sys
 
 import torch 
 import gin 
@@ -11,10 +12,11 @@ gin.add_config_file_search_path('configs/')
 from datasets import *
 from metrics import *
 from networks import *
+from training import *
 from trim import *
 
 FLAGS = flags.FLAGS
-flags.DEFINE_multi_string('config', default=None, required=True, 
+flags.DEFINE_multi_string('config', default=None, required=False, 
                           help='Config files to run experiments')
 flags.DEFINE_integer('device', default=-1, required=False, 
                      help='Cuda device to train on (-1: cpu)')
@@ -22,14 +24,34 @@ flags.DEFINE_string('db', default=None, required=True,
                     help='Path to lmdb dataset')
 flags.DEFINE_string('run_name', default=None, required=True, 
                     help='Where to store checkpoints+logs')
+flags.DEFINE_integer('bs', default=8, required=False, help='Batch size')
 flags.DEFINE_string('resume', default=None, required=False, 
                     help='Resume experiment from corresponding checkpoint')
 flags.DEFINE_string('pretrained_mask', default=None, required=False, 
                     help="Path to checkpoint to use for pre-trimming")
 
 def main(argv):
-    pass
+    assert FLAGS.config is not None or FLAGS.resume is not None, 'Either a config file or a run dir. should be provided'
+    if FLAGS.device==-1:
+        device='cpu'
+    else:
+        device=f'cuda:{FLAGS.device}'
+    gin.parse_config_files_and_bindings(FLAGS.config, bindings=[
+        f'BS = {FLAGS.bs}', 
+        # f'DB = {FLAGS.db}'
+    ])
+    os.makedirs(FLAGS.run_name, exist_ok=True)
+    model = combine_fm_and_head()
+    print(f'Number of parameters : {round(sum([p.numel() for p in model.parameters()])/1e6, 2)}M')
+    model = make_masks(model)
+    if FLAGS.pretrained_mask is not None:
+        copyfile(FLAGS.pretrained_mask, os.path.join(FLAGS.run_path, 'source.pt'))
+        weights = torch.load(FLAGS.pretrained_mask, map_location='cpu')['model']
+        model.load_state_dict(weights)
+        trim_model(model)
+        del weights
+    trainer = Trainer(run_name=FLAGS.run_name, device=device)
+
 
 if __name__=='__main__':
-    gin.parse_config_files_and_bindings(FLAGS.config, bindings=None)
     app.run(main)

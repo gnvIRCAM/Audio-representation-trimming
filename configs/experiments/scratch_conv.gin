@@ -1,5 +1,5 @@
 include 'configs/experiments/base.gin'
 
 models.make_masks:
-    mask_module = @models.ScaleShift
+    mask_module = @models.MaskModule
     skip = False

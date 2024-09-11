@@ -61,11 +61,11 @@ def make_ctc_loss(weight, device, blank, pad_token):
         return weight*loss_fn(probs, labels, input_lengths, output_lengths)
     return train_callback, 'CTC'
 
-@gin.configurable(module='train')
-def make_losses(task_loss, sparsity_loss=None):
-    task_loss_fn, task_loss_name = task_loss()
-    loss_dict = {task_loss_name: task_loss_fn()}
+@gin.configurable(module='train', denylist=['device'])
+def make_losses(task_loss, sparsity_loss=None, device='cpu'):
+    task_loss_fn, task_loss_name = task_loss(device=device)
+    loss_dict = {task_loss_name: task_loss_fn}
     if sparsity_loss is not None:
-        sparsity_loss_fn, sparsity_loss_name = task_loss()
-        loss_dict[sparsity_loss_name]=sparsity_loss_fn()
+        sparsity_loss_fn, sparsity_loss_name = sparsity_loss(device=device)
+        loss_dict[sparsity_loss_name]=sparsity_loss_fn
     return loss_dict

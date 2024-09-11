@@ -1,0 +1,14 @@
+LR = .001
+NUM_STEPS = 100000
+
+models.make_masks:
+    skip = True
+
+train.Trainer:
+    lr = %LR
+    scheduler_fn = @train.constant_lr_scheduler
+    num_steps = %NUM_STEPS
+    log_steps = 200
+    val_steps = 10000
+    save_steps = 10000
+    losses_maker = @train.make_losses

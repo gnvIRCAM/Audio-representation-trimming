@@ -3,6 +3,8 @@ import json
 import numpy as np
 import os
 import typing as tp
+import sys
+sys.path.append('..')
 
 import gin 
 import torch
@@ -11,16 +13,16 @@ from torch.optim import Adam
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-from ..metrics import compute_metrics
+from metrics import compute_metrics
 from .utils import *
 
-@gin.configurable(module='train', denylist=['run_path', 'device'])
+@gin.configurable(module='train', denylist=['run_name', 'device'])
 class Trainer:
     def __init__(
         self, 
-        run_path: str, 
+        run_name: str, 
         device: str | int, 
-        losses, 
+        losses_maker, 
         lr, 
         scheduler_fn, 
         num_steps, 
@@ -28,7 +30,7 @@ class Trainer:
         val_steps, 
         save_steps
     ) -> None:
-        self.run_path = run_path 
+        self.run_name = run_name 
         self.logger: SummaryWriter = None
         self.device = device
         if isinstance(device, int):
@@ -36,8 +38,8 @@ class Trainer:
                 self.device='gpu'
             else:
                 self.device = f'cuda:{device}'
-        self.eval_metadata_path = os.path.join(run_path, 'eval.json')
-        self.losses = losses
+        self.eval_metadata_path = os.path.join(run_name, 'eval.json')
+        self.losses = losses_maker(device=self.device)
         self.losses_logs = {loss_name:[] for loss_name in self.losses.keys()}
         self.lr = lr
         self.num_steps = num_steps
@@ -47,8 +49,8 @@ class Trainer:
         self.scheduler_fn = scheduler_fn
             
     def init_training(self):
-        os.makedirs(self.run_path, exist_ok=True)
-        self.logger = SummaryWriter(self.run_path)
+        os.makedirs(self.run_name, exist_ok=True)
+        self.logger = SummaryWriter(self.run_name)
 
     @gin.configurable(module='train', allowlist=['metrics'])
     @torch.no_grad()
@@ -97,7 +99,7 @@ class Trainer:
                   ):
         if not filename.endswith('.pt'):
             filename+='.pt'
-        filename = os.path.join(self.run_path, filename)
+        filename = os.path.join(self.run_name, filename)
                
         if optimizer is not None:
             torch.save({'model': model.state_dict(), 
@@ -139,6 +141,6 @@ class Trainer:
                 self.val_step(step+1, model, val_loader)
 
             if not (step+1)%self.save_steps:
-                self.save_state(os.path.join(self.run_path, f'{step+1}.pt'), model, optimizer)
+                self.save_state(os.path.join(self.run_name, f'{step+1}.pt'), model, optimizer)
         
-        self.save_state(os.path.join(self.run_path, f'final.pt'), model)
+        self.save_state(os.path.join(self.run_name, f'final.pt'), model)

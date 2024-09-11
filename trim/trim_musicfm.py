@@ -1,6 +1,7 @@
 import typing as tp 
 from types import MethodType
 
+import gin
 import torch 
 import torch.nn as nn 
 import torch.nn.functional as F
@@ -115,6 +116,7 @@ def _trim_feedforward(feedforward_module: nn.Module)->nn.Module:
     trim_weight_bias(feedforward_module.output_dense)
     return feedforward_module
 
+@gin.configurable(module='trim', denylist=['musicfm'])
 def trim_musicfm(musicfm: nn.Module, layer_stop_idx: int=-1):
     _name = 'network.0.conformer.layers'
     trim_layers = []

@@ -1,2 +1,13 @@
+LAYER_IDX = -1
+data_sr = 44100
+
+models.make_wav2vec_masks:
+    layer_stop_idx = %LAYER_IDX
+
 models.combine_fm_and_head:
     end2end_class = @models.End2EndWav2Vec
+    layer_stop_idx = %LAYER_IDX
+    data_sr = %DATA_SR
+
+trim.trim_model:
+    trimmer = @trim.trim_wav2vec

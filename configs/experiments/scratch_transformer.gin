@@ -1,0 +1,14 @@
+include 'configs/experiments/base.gin'
+
+LR = .0001
+NUM_STEPS = 100000
+
+models.make_masks:
+    mask_module = @models.MaskModule
+    skip = False
+
+train.warmup_lr_scheduler:
+    num_warmup = 25000
+
+train.Trainer:
+    scheduler_fn = @train.warmup_lr_scheduler

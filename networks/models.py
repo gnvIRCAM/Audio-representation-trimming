@@ -22,10 +22,13 @@ class End2EndModel(nn.Module):
     """
     def __init__(self, 
                  foundation_model: nn.Module, 
-                 head: nn.Module)->None:
+                 head: nn.Module, 
+                 model_sr: int, 
+                 data_sr: int)->None:
         super().__init__()
         self.foundation_model = foundation_model
         self.head = head
+        self.resampler = torchaudio.transforms.Resample(data_sr, model_sr)
     
     @property
     def num_classes(self):
@@ -46,16 +49,20 @@ class End2EndModel(nn.Module):
         raise NotImplementedError
     
     def forward(self, x: torch.Tensor):
+        with torch.no_grad():
+            x = self.resampler(x)
         embedding = self.get_embedding(x)
         return self.head(embedding)
 
 @gin.configurable(module='models')
 class End2EndCLAP(End2EndModel):
-    def __init__(self, head: nn.Module) -> None:
+    def __init__(self, 
+                 head: nn.Module, 
+                 data_sr: int) -> None:
         clap = CLAP(version='2022')
         clap = clap.clap
         delattr(clap, 'caption_encoder') 
-        super().__init__(clap, head)
+        super().__init__(clap, head, model_sr=44100, data_sr=data_sr)
 
     def get_embedding(self, x: torch.Tensor)->torch.Tensor:
         emb, _ = self.foundation_model.audio_encoder(x)
@@ -65,6 +72,7 @@ class End2EndCLAP(End2EndModel):
 class End2EndMusicFM(End2EndModel):
     def __init__(self, 
                  head: nn.Module, 
+                 data_sr: int, 
                  layer_idx: int=-1, 
                  time_avg: bool=True) -> None:
         musicfm_weights = os.environ['MUSICFM_WEIGHTS_PATH']
@@ -73,7 +81,7 @@ class End2EndMusicFM(End2EndModel):
             stat_path=os.path.join(musicfm_weights, 'msd_stats.json'),
             model_path=os.path.join(musicfm_weights, 'pretrained_msd.pt'),        
         )
-        super().__init__(musicfm, head)
+        super().__init__(musicfm, head, model_sr=24000, data_sr=data_sr)
         self.layer_idx = layer_idx
         self.time_avg = time_avg
         
@@ -87,13 +95,14 @@ class End2EndMusicFM(End2EndModel):
 class End2EndWav2Vec(End2EndModel):
     def __init__(self, 
                  head: nn.Module, 
+                 data_sr: int, 
                  layer_idx: int=-1, 
                  time_avg: bool=True) -> None:
         bundle = torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H
         sr = bundle.sample_rate 
         gin.bind_parameter('%FM_SR', sr)
         wav2vec = bundle.get_model()
-        super().__init__(wav2vec, head)
+        super().__init__(wav2vec, head, model_sr=16000, data_sr=data_sr)
         self.layer_idx = layer_idx
         self.time_avg = time_avg
 

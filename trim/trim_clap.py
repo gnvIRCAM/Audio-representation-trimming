@@ -2,6 +2,7 @@ from copy import deepcopy
 import typing as tp 
 from types import MethodType
 
+import gin
 import torch 
 import torch.nn as nn 
 
@@ -10,6 +11,7 @@ from .utils import *
 
 # Remove nn_trim from here
 
+@gin.configurable(module='trim', denylist=['clap'])
 def trim_clap(clap: nn.Module)->nn.Module:
     """
     Given a CLAP model trained with binary masks, will convert the masks 

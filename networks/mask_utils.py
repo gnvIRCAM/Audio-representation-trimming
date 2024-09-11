@@ -47,7 +47,9 @@ def sequential_setattr(obj: tp.Any,
             return sequential_setattr(obj[int(name)], res, val)
         
 @gin.configurable(module='models', denylist=['model'])
-def make_masks(model, mask_builder):
+def make_masks(model, mask_builder, skip=False):
+    if skip:
+        return model
     return mask_builder(model)
 
 @gin.configurable(module='models', denylist=['model'])

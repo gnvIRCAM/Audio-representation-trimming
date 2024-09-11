@@ -1,12 +1,17 @@
 LAYER_IDX = 7
+DATA_SR = 44100
 
 models.make_musicfm_masks:
     layer_stop_idx = %LAYER_IDX
-
+    
 models.combine_fm_and_head:
     end2end_class = @models.End2EndMusicFM
     layer_idx = %LAYER_IDX
+    data_sr = %DATA_SR
 
 models.make_masks:
     mask_builder = @models.make_musicfm_masks
+
+trim.trim_model:
+    trimmer = @trim.trim_musicfm
 

@@ -1,6 +1,7 @@
 import typing as tp 
 from types import MethodType
 
+import gin
 import torch 
 import torch.nn as nn 
 
@@ -98,6 +99,7 @@ def _trim_conv(conv_module: nn.Module)->nn.Module:
     trim_weight_bias(conv_module.conv)
     return conv_module
 
+@gin.configurable(module='trim', denylist=['wav2vec'])
 def trim_wav2vec(wav2vec: nn.Module)->nn.Module:
     _name = 'network.0'
     conv_layers = []

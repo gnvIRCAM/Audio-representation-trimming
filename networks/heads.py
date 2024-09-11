@@ -23,7 +23,7 @@ class MLP(HeadBase):
         input_dim: int, 
         output_dim: int, 
         hidden_dims: tp.List[int] = [], 
-        hidden_act: nn.Module = nn.ReLU(),
+        hidden_act: nn.Module = nn.ReLU,
         out_act: tp.Optional[nn.Module] = None) -> None:
         super().__init__(output_dim)
         
@@ -36,7 +36,7 @@ class MLP(HeadBase):
             self.layers.append(hidden_act())
             self.layers.append(nn.Linear(d_in, d_out))
         if out_act is not None:
-            self.layers.append(out_act)
+            self.layers.append(out_act())
         
         self.layers = nn.Sequential(*self.layers)
     
@@ -63,7 +63,7 @@ class BLSTM(HeadBase):
             bidirectional=True
         )
         self.proj = nn.Linear(2*hidden_dim, output_dim)
-        self.out_act = out_act
+        self.out_act = out_act()
 
     def forward(self, x: torch.Tensor)-> torch.Tensor:
         x, _ = self.lstm(x)
