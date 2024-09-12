@@ -2,8 +2,10 @@ import json
 import typing as tp 
 
 import gin
+import numpy as np
 import torch
 from torch.nn.utils.rnn import pad_sequence 
+from tqdm import trange
 
 @gin.configurable(module='data')
 class Tokenizer:
@@ -60,3 +62,33 @@ class Tokenizer:
 def load_metadata(metadata_path: str):
     with open(metadata_path, 'r') as f:
         return json.load(f)
+    
+def make_loaders(dataset : torch.utils.data.Dataset, 
+                 bs: int, 
+                 num_workers: int = 0, 
+                 fold: int = 0, 
+                 handle_sequence_labels: bool = False)-> torch.utils.data.Dataloader:
+    
+    assert fold<len(dataset[0]['metadata']['fold']), f'Dataset has {len(dataset[0]['metadata']['fold'])}, but got fold {fold}'
+    
+    train_indexes, val_indexes, test_indexes = [], [], []
+    for i in trange(len(dataset), desc='Building loaders'):
+        example_fold = dataset[i]['metadata']['fold'][fold]
+        if example_fold=='train':
+            train_indexes.append(i)
+        elif example_fold=='val':
+            val_indexes.append(i)
+        else:
+            test_indexes.append(i)
+    if len(test_indexes)==0:
+        test_indexes=val_indexes
+    
+    @torch.no_grad()
+    def collate_fn(B):
+        B_wav, B_label, B_class = B['waveform'], B['metadata']['label'], B['metadata']['class'] 
+        B_wav = [torch.tensor(x).float().unsqueeze(0) for x in B_wav]
+        B_wav = pad_sequence(B_wav, batch_first=True, padding_value=0)
+        B_wav = torch.cat(B_wav, dim=0)
+        return
+    
+    return 
