@@ -13,3 +13,5 @@ notebooks/*
 *.pt
 runs/*
 *.ipynb
+*parser_metadata.py
+/datasets/data/gtzan_folds
