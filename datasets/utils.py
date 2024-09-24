@@ -67,9 +67,9 @@ def make_loaders(dataset : torch.utils.data.Dataset,
                  bs: int, 
                  num_workers: int = 0, 
                  fold: int = 0, 
-                 handle_sequence_labels: bool = False)-> torch.utils.data.Dataloader:
+                 handle_sequence_labels: bool = False)-> torch.utils.data.DataLoader:
     
-    assert fold<len(dataset[0]['metadata']['fold']), f'Dataset has {len(dataset[0]['metadata']['fold'])}, but got fold {fold}'
+    assert fold<len(dataset[0]['metadata']['fold']), f"Dataset has {len(dataset[0]['metadata']['fold'])} folds, but got fold {fold}"
     
     train_indexes, val_indexes, test_indexes = [], [], []
     for i in trange(len(dataset), desc='Building loaders'):

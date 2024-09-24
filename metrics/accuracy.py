@@ -24,9 +24,10 @@ def compute_weighted_accuracy(preds: torch.Tensor,
                               labels: torch.Tensor)->float: 
     preds = torch.cat(preds, dim=0)
     labels = torch.cat(labels, dim=0)
-    preds = preds.argmax(-1)
-    weighted_acc = torcheval.metrics.Accuracy(num_classes=preds.shape[-1], average='weighted')
-    return weighted_acc(preds, labels)
+    # preds = preds.argmax(-1)
+    weighted_acc = torcheval.metrics.MulticlassAccuracy(num_classes=preds.shape[-1], average='macro')
+    weighted_acc.update(preds, labels)
+    return weighted_acc.compute()
 
 @gin.register(module='metrics', allowlist=['do_sigmoid'])
 @torch.no_grad()
