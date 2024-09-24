@@ -16,8 +16,7 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from audio_example import AudioExample
-from utils import load_metadata
+from datasets import *
 
 torch.set_grad_enabled(False)
 _EXT = [k.lower() for k in  sf.available_formats().keys()]

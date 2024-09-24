@@ -5,7 +5,11 @@ import gin
 import numpy as np
 import torch
 from torch.nn.utils.rnn import pad_sequence 
+from torch.utils.data import DataLoader
+from torch.utils.data.sampler import SubsetRandomSampler
 from tqdm import trange
+
+from .dataset import *
 
 @gin.configurable(module='data')
 class Tokenizer:
@@ -63,17 +67,18 @@ def load_metadata(metadata_path: str):
     with open(metadata_path, 'r') as f:
         return json.load(f)
     
-def make_loaders(dataset : torch.utils.data.Dataset, 
+def make_loaders(dataset_path: str, 
                  bs: int, 
                  num_workers: int = 0, 
-                 fold: int = 0, 
-                 handle_sequence_labels: bool = False)-> torch.utils.data.DataLoader:
-    
-    assert fold<len(dataset[0]['metadata']['fold']), f"Dataset has {len(dataset[0]['metadata']['fold'])} folds, but got fold {fold}"
+                 fold: int = 0)-> torch.utils.data.DataLoader:
+    dataset = SimpleDataset(
+        dataset_path
+    )
+    assert fold<len(dataset[0]['metadata']['metadata']['fold']), f"Dataset has {len(dataset[0]['metadata']['metadata']['fold'])} folds, but got fold {fold}"
     
     train_indexes, val_indexes, test_indexes = [], [], []
     for i in trange(len(dataset), desc='Building loaders'):
-        example_fold = dataset[i]['metadata']['fold'][fold]
+        example_fold = dataset[i]['metadata']['metadata']['fold'][fold]
         if example_fold=='train':
             train_indexes.append(i)
         elif example_fold=='val':
@@ -85,10 +90,39 @@ def make_loaders(dataset : torch.utils.data.Dataset,
     
     @torch.no_grad()
     def collate_fn(B):
-        B_wav, B_label, B_class = B['waveform'], B['metadata']['label'], B['metadata']['class'] 
-        B_wav = [torch.tensor(x).float().unsqueeze(0) for x in B_wav]
+        B_wav = [torch.tensor(x['waveform']).float()for x in B]
         B_wav = pad_sequence(B_wav, batch_first=True, padding_value=0)
-        B_wav = torch.cat(B_wav, dim=0)
-        return
+        B_label = [torch.tensor(y['metadata']['metadata']['label']) for y in B]
+        if B_label[0].dim()==3:
+            B_label = pad_sequence(B_label, batch_first=True, padding_value=0)
+        else:
+            B_label = torch.stack(B_label, dim=0)
+        return B_wav, B_label, [x['metadata']['metadata']['class'] for x in B] 
     
-    return 
+    _train_sampler = SubsetRandomSampler(indices=train_indexes)
+    _val_sampler = SubsetRandomSampler(indices=val_indexes)
+    _test_sampler = SubsetRandomSampler(indices=test_indexes)
+    
+    train_loader = DataLoader(
+        dataset, 
+        batch_size=bs, 
+        sampler=_train_sampler, 
+        collate_fn=collate_fn, 
+        num_workers=num_workers
+        )
+    val_loader = DataLoader(
+        dataset, 
+        batch_size=bs, 
+        sampler=_val_sampler, 
+        collate_fn=collate_fn, 
+        num_workers=num_workers
+        )
+    test_loader = DataLoader(
+        dataset, 
+        batch_size=bs, 
+        sampler=_test_sampler, 
+        collate_fn=collate_fn, 
+        num_workers=num_workers
+        )
+    
+    return train_loader, val_loader, test_loader
