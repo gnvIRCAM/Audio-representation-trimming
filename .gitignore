@@ -9,9 +9,8 @@ dist/*
 .vscode
 *DS_Store
 *data/*
-notebooks/*
 *.pt
 runs/*
-*.ipynb
+test.ipynb
 *parser_metadata.py
 *gtzan_folds/

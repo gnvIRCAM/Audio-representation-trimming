@@ -65,8 +65,8 @@ class Trainer:
             with open(self.eval_metadata_path, 'r') as f:
                 eval_metadata = json.load(f)
         else:
-            eval_data = {}
-        eval_metadata[step] = eval_data
+            eval_metadata = {}
+        eval_metadata[step] = {k: v.item() for k, v in eval_data.items()}
         with open(self.eval_metadata_path, 'w') as f:
             json.dump(eval_metadata, f)
         
