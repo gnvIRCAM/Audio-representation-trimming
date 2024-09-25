@@ -9,8 +9,8 @@ import soundfile as sf
 import subprocess
 import sys
 from typing import Callable, Iterable, Sequence, Tuple
-import yaml
 
+import librosa as li
 import lmdb
 import numpy as np
 import torch
@@ -27,6 +27,10 @@ flags.DEFINE_string('input_path',
                      None,
                      help='Path to a directory containing audio files',
                      required=True)
+flags.DEFINE_string('output_path',
+                    ".",
+                    help='Output directory for the dataset',
+                    required=False)
 flags.DEFINE_string('dataset_name', 
                     None, 
                     required=True, 
@@ -36,13 +40,6 @@ flags.DEFINE_string('dataset_name',
                         esc50, us8k, fsd, \
                         libri, fluent, commands\
                         )")
-flags.DEFINE_string('output_path',
-                    ".",
-                    help='Output directory for the dataset',
-                    required=False)
-flags.DEFINE_integer('num_signal',
-                     262144,
-                     help='Number of audio samples to use during training')
 flags.DEFINE_integer('num_cores',
                      8,
                      help='Number of cores for multiprocessing')
@@ -55,45 +52,28 @@ flags.DEFINE_bool('dyndb',
 
 
 def float_array_to_int16_bytes(x):
-    return np.floor(x * (2**15 - 1)).astype(np.int16).tobytes()
+    return np.floor(x * (2**15 - 1)).astype(np.int16)
 
-def load_audio_chunk(audio_file: tuple, n_signal: int) -> Iterable[np.ndarray]:
-
+def load_audio(audio_file: tuple) -> Iterable[np.ndarray]:
     path, metadata = audio_file
-    process = subprocess.Popen(
-        [
-            'ffmpeg', '-hide_banner', '-loglevel', 'panic', '-i', path, '-ac',
-            '1', '-af',
-            'dynaudnorm, silenceremove=stop_periods=-1:stop_duration=1:stop_threshold=-30dB',
-            '-f', 's16le', '-'
-        ],
-        stdout=subprocess.PIPE,
-    )
-
-    chunk = process.stdout.read(2 * n_signal)
-    i = 0
-    while len(chunk) == 2 * n_signal:
-        metadata["chunk_number"] = i
-        i += 1
-        yield chunk, metadata
-        chunk = process.stdout.read(2 * n_signal)
-
-    process.stdout.close()
+    y, _ = li.load(path)
+    y = y.squeeze()
+    y = float_array_to_int16_bytes(y)
+    yield y, metadata
 
 def flatten(iterator: Iterable):
     for elm in iterator:
         for sub_elm in elm:
             yield sub_elm
-    
+
 def process_audio_array(audio: Tuple[int, Tuple[bytes,dict]], 
-                        env: lmdb.Environment,
-                        n_signal: int) -> int:
+                        env: lmdb.Environment) -> int:
     
     audio_id, data = audio
-    audio_id = audio_id
     audio_samples, metadata = data
+    duration = audio_samples.shape[0]
     ae = AudioExample()
-    ae.put_buffer("waveform", audio_samples, [n_signal])
+    ae.put_array("waveform", audio_samples, dtype=np.int16)
     ae.put_metadata(metadata)
     key = f'{audio_id:08d}'
     with env.begin(write=True) as txn:
@@ -101,7 +81,7 @@ def process_audio_array(audio: Tuple[int, Tuple[bytes,dict]],
             key.encode(),
             bytes(ae),
         )
-    return audio_id
+    return duration
 
 def flatmap(pool: multiprocessing.Pool,
             func: Callable,
@@ -138,11 +118,10 @@ def search_for_audios(path_list: Sequence[str] | str, extensions: Sequence[str])
     audios = flatten(audios)
     return audios
 
-def main(dummy):
+def main(argv):
     FLAGS(sys.argv)
 
     labels = load_metadata(f'datasets/data/metadata/{FLAGS.dataset_name}_metadata.json')
-    num_signal = load_metadata(f'datasets/data/metadata/durations.json')[FLAGS.dataset_name]
     labels = {os.path.join(FLAGS.input_path, k): v for k, v in labels.items()}
 
    # create database
@@ -152,46 +131,33 @@ def main(dummy):
                    writemap=True,
                    readahead=False)
 
-    print("number of cores: ", FLAGS.num_cores)
+    print("Number of cores: ", FLAGS.num_cores)
     pool = multiprocessing.Pool(FLAGS.num_cores)
-
 
     print('Searching for audios')
     audios = search_for_audios(FLAGS.input_path, _EXT)
     audios = map(str, audios)
-    audios = map(os.path.abspath, audios)
-    _audios = []
-    for audio in audios:
-        _audios.append(audio)
-    audios = _audios
+    audios = list(map(os.path.abspath, audios))
     print(f'Found  {len(audios)} audio files')
-    print('Reading sample rate')
     _, _SR = sf.read(audios[0])
-    num_signal*=_SR
-    print(f'Sample rate : {_SR}')
     metadata = [{"path": audio, "metadata": labels[audio]} for audio in audios]
     audios = list(zip(audios, metadata))
-
-    chunk_load = functools.partial(load_audio_chunk,
-                         n_signal=num_signal)
     
-    # load chunks
-    chunks = flatmap(pool, chunk_load, audios)
+    chunks = flatmap(pool, load_audio, audios)
     chunks = enumerate(chunks)
     
-    print("Reading chunks")
+    print("Reading audios")
     
     processed_samples = map(
         functools.partial(process_audio_array,
-                env=env,
-                n_signal=num_signal), chunks)
+                env=env), chunks)
     
     pbar = tqdm(processed_samples)
     print("Processing samples")
     
-    
-    for audio_id in pbar:
-        n_seconds = num_signal / _SR * audio_id
+    n_seconds = 0
+    for audio_length in pbar:
+        n_seconds +=  audio_length/ _SR
 
         pbar.set_description(
             f'dataset length: {timedelta(seconds=n_seconds)}')

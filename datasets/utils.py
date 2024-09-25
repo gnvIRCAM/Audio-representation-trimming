@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from torch.nn.utils.rnn import pad_sequence 
 from torch.utils.data import DataLoader
-from torch.utils.data.sampler import SubsetRandomSampler
+from torch.utils.data import Subset
 from tqdm import trange
 
 from .dataset import *
@@ -99,30 +99,30 @@ def make_loaders(dataset_path: str,
             B_label = torch.stack(B_label, dim=0)
         return B_wav, B_label, [x['metadata']['metadata']['class'] for x in B] 
     
-    _train_sampler = SubsetRandomSampler(indices=train_indexes)
-    _val_sampler = SubsetRandomSampler(indices=val_indexes)
-    _test_sampler = SubsetRandomSampler(indices=test_indexes)
+    train_set = Subset(dataset, indices=train_indexes)
+    val_set = Subset(dataset, indices=val_indexes)
+    test_set = Subset(dataset, indices=test_indexes)
     
     train_loader = DataLoader(
-        dataset, 
+        train_set, 
         batch_size=bs, 
-        sampler=_train_sampler, 
         collate_fn=collate_fn, 
-        num_workers=num_workers
+        num_workers=num_workers, 
+        shuffle=True
         )
     val_loader = DataLoader(
-        dataset, 
+        val_set, 
         batch_size=bs, 
-        sampler=_val_sampler, 
         collate_fn=collate_fn, 
-        num_workers=num_workers
+        num_workers=num_workers, 
+        shuffle=False
         )
     test_loader = DataLoader(
-        dataset, 
+        test_set, 
         batch_size=bs, 
-        sampler=_test_sampler, 
         collate_fn=collate_fn, 
-        num_workers=num_workers
+        num_workers=num_workers, 
+        shuffle=False
         )
     
     return train_loader, val_loader, test_loader
