@@ -9,7 +9,7 @@ train.make_bce_loss:
 train.make_losses:
     task_loss = @train.make_bce_loss
 
-train.Trainer.val_step:
+train.val_step:
     metrics = {
         'mAP': @metrics.compute_average_precision, 
         'AUROC': @metrics.compute_auroc

@@ -71,7 +71,7 @@ def compute_metrics(model: nn.Module,
                     loader: tp.Iterable[tp.Tuple[torch.Tensor, tp.List[str], torch.Tensor]], 
                     metrics: tp.Dict[str, tp.Callable[[tp.Any], tp.Any]],
                     pbar: bool = True) -> tp.Dict[str, float]:
-    model.eval().to(device)
+    model.eval()
     model = model.to(device)
     preds = []
     labels = []

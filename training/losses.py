@@ -47,7 +47,7 @@ def make_cross_entropy_loss(weight, device):
 def make_bce_loss(weight, device):
     loss_fn = nn.BCEWithLogitsLoss(reduction='mean').to(device)
     def train_callback(pred, labels, model):
-        return weight*loss_fn(pred, labels)
+        return weight*loss_fn(pred, labels.float())
     return train_callback, 'BCE'
 
 @gin.configurable(module='train')

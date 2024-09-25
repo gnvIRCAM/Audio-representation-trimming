@@ -80,14 +80,19 @@ def make_loaders(dataset_path: str,
     assert fold<len(dataset[0]['metadata']['metadata']['fold']), f"Dataset has {len(dataset[0]['metadata']['metadata']['fold'])} folds, but got fold {fold}"
     
     train_indexes, val_indexes, test_indexes = [], [], []
-    num_labels = 0
+    num_classes = 0
     for i in trange(len(dataset), desc='Building loaders'):
         example_fold = dataset[i]['metadata']['metadata']['fold'][fold]
         label = dataset[i]['metadata']['metadata']['label']
         if isinstance(label, list):
-            label = max(label)
-        if label>num_labels:
-            num_labels = label
+            if np.all([l in [0, 1] for l in label]):
+                label = len(label)
+            else:
+                label = max(label)+1
+        else:
+            label = label+1
+        if label>num_classes:
+            num_classes = label
         if example_fold=='train':
             train_indexes.append(i)
         elif example_fold=='val':
@@ -134,4 +139,4 @@ def make_loaders(dataset_path: str,
         shuffle=False
         )
     
-    return train_loader, val_loader, test_loader, dataset_sr, num_labels+1
+    return train_loader, val_loader, test_loader, dataset_sr, num_classes

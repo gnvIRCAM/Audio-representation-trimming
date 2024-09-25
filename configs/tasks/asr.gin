@@ -13,7 +13,7 @@ train.make_ctc_loss:
 train.make_losses:
     task_loss = @train.make_ctc_loss
 
-train.Trainer.val_step:
+train.val_step:
     metrics = {
         'wer': @metrics.compute_wer, 
     }

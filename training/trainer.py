@@ -61,8 +61,11 @@ class Trainer:
         for metric_name, metric_val in eval_data.items():
             self.logger.add_scalar(f'Eval/{metric_name}', metric_val, global_step=step)
 
-        with open(self.eval_metadata_path, 'r') as f:
-            eval_metadata = json.load(f)
+        if os.path.isfile(self.eval_metadata_path):
+            with open(self.eval_metadata_path, 'r') as f:
+                eval_metadata = json.load(f)
+        else:
+            eval_data = {}
         eval_metadata[step] = eval_data
         with open(self.eval_metadata_path, 'w') as f:
             json.dump(eval_metadata, f)
