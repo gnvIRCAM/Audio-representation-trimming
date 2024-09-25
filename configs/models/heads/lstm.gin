@@ -1,7 +1,4 @@
-INPUT_DIM = 512
-NUM_CLASSES = 10
-
 models.BLSTM:
-    input_dim = %INPUT_DIM
+    input_dim = %EMBEDDING_DIM
     output_dim = %NUM_CLASSES
     hidden_dim = 256

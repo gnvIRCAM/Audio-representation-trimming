@@ -1,4 +1,5 @@
 import json
+import os
 import typing as tp 
 
 import gin
@@ -66,7 +67,7 @@ class Tokenizer:
 def load_metadata(metadata_path: str):
     with open(metadata_path, 'r') as f:
         return json.load(f)
-    
+
 def make_loaders(dataset_path: str, 
                  bs: int, 
                  num_workers: int = 0, 
@@ -74,11 +75,19 @@ def make_loaders(dataset_path: str,
     dataset = SimpleDataset(
         dataset_path
     )
+    with open(os.path.join(dataset_path, 'dataset_metadata.json'), 'r') as f:
+        dataset_sr = json.load(f)['dataset_sr']
     assert fold<len(dataset[0]['metadata']['metadata']['fold']), f"Dataset has {len(dataset[0]['metadata']['metadata']['fold'])} folds, but got fold {fold}"
     
     train_indexes, val_indexes, test_indexes = [], [], []
+    num_labels = 0
     for i in trange(len(dataset), desc='Building loaders'):
         example_fold = dataset[i]['metadata']['metadata']['fold'][fold]
+        label = dataset[i]['metadata']['metadata']['label']
+        if isinstance(label, list):
+            label = max(label)
+        if label>num_labels:
+            num_labels = label
         if example_fold=='train':
             train_indexes.append(i)
         elif example_fold=='val':
@@ -125,4 +134,4 @@ def make_loaders(dataset_path: str,
         shuffle=False
         )
     
-    return train_loader, val_loader, test_loader
+    return train_loader, val_loader, test_loader, dataset_sr, num_labels+1

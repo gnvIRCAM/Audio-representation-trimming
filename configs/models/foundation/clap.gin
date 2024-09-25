@@ -1,4 +1,5 @@
 DATA_SR = 44100
+EMBEDDING_DIM = 1024
 
 models.combine_fm_and_head:
     end2end_class = @models.End2EndCLAP

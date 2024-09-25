@@ -20,11 +20,12 @@ flags.DEFINE_multi_string('config', default=None, required=False,
                           help='Config files to run experiments')
 flags.DEFINE_integer('device', default=-1, required=False, 
                      help='Cuda device to train on (-1: cpu)')
-flags.DEFINE_string('db', default=None, required=True, 
-                    help='Path to lmdb dataset')
 flags.DEFINE_string('run_name', default=None, required=True, 
                     help='Where to store checkpoints+logs')
+flags.DEFINE_string('db', default=None, required=True, 
+                    help='Path to lmdb dataset')
 flags.DEFINE_integer('bs', default=8, required=False, help='Batch size')
+flags.DEFINE_integer('fold', default=0, required=False, help='Data fold to use for training/validation')
 flags.DEFINE_string('resume', default=None, required=False, 
                     help='Resume experiment from corresponding checkpoint')
 flags.DEFINE_string('pretrained_mask', default=None, required=False, 
@@ -36,9 +37,12 @@ def main(argv):
         device='cpu'
     else:
         device=f'cuda:{FLAGS.device}'
+    train_loader, val_loader, _, dataset_sr, num_classes = make_loaders(FLAGS.db, FLAGS.bs, num_workers=8, 
+                                                     fold=FLAGS.fold)
     gin.parse_config_files_and_bindings(FLAGS.config, bindings=[
         f'BS = {FLAGS.bs}', 
-        # f'DB = {FLAGS.db}'
+        f'DATASET_SR = {dataset_sr}', 
+        f'NUM_CLASSES = {num_classes}'
     ])
     os.makedirs(FLAGS.run_name, exist_ok=True)
     model = combine_fm_and_head()
@@ -51,6 +55,15 @@ def main(argv):
         trim_model(model)
         del weights
     trainer = Trainer(run_name=FLAGS.run_name, device=device)
+    with open(os.path.join(FLAGS.run_name, 'data.txt'), 'w') as f:
+        f.write(
+            f'Dataset : {FLAGS.db}\nFold: {FLAGS.fold}'
+        )
+    trainer.fit(
+        model=model, 
+        train_loader=train_loader, 
+        val_loader=val_loader
+    )
 
 
 if __name__=='__main__':

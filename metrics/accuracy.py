@@ -71,12 +71,13 @@ def compute_metrics(model: nn.Module,
                     loader: tp.Iterable[tp.Tuple[torch.Tensor, tp.List[str], torch.Tensor]], 
                     metrics: tp.Dict[str, tp.Callable[[tp.Any], tp.Any]],
                     pbar: bool = True) -> tp.Dict[str, float]:
-    model = model.eval().to(device)
+    model.eval().to(device)
+    model = model.to(device)
     preds = []
     labels = []
     if pbar:
         loader = tqdm(loader, desc=f'Evaluating model on metrics {tuple(metrics.keys())}', leave=False)
-    for x, label in loader:
+    for x, label, _ in loader:
         labels.append(label)
         x = x.to(device)
         pred = model(x).detach().cpu()

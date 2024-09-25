@@ -1,5 +1,6 @@
 LAYER_IDX = -1
 data_sr = 44100
+EMBEDDING_DIM = 1024
 
 models.make_wav2vec_masks:
     layer_stop_idx = %LAYER_IDX

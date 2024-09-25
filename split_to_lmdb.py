@@ -6,10 +6,10 @@ import multiprocessing
 import os
 import pathlib
 import soundfile as sf
-import subprocess
 import sys
 from typing import Callable, Iterable, Sequence, Tuple
 
+import json
 import librosa as li
 import lmdb
 import numpy as np
@@ -118,7 +118,7 @@ def search_for_audios(path_list: Sequence[str] | str, extensions: Sequence[str])
     audios = flatten(audios)
     return audios
 
-def main(argv):
+def main(dummy):
     FLAGS(sys.argv)
 
     labels = load_metadata(f'datasets/data/metadata/{FLAGS.dataset_name}_metadata.json')
@@ -157,13 +157,16 @@ def main(argv):
     
     n_seconds = 0
     for audio_length in pbar:
-        n_seconds +=  audio_length/ _SR
+        n_seconds +=  (audio_length/_SR)
 
         pbar.set_description(
             f'dataset length: {timedelta(seconds=n_seconds)}')
 
     pool.close()
     env.close()
+    
+    with open(os.path.join(FLAGS.output_path, 'dataset_metadata.json'), 'w') as f:
+        json.dump({'dataset_sr': _SR, 'dataset_length': n_seconds}, f)
 
 if __name__ == '__main__':
     app.run(main)

@@ -68,7 +68,7 @@ class Trainer:
             json.dump(eval_metadata, f)
         
     def train_step(self, x, labels, model, optimizer, scheduler):
-        model = model.train()
+        model.train()
         x = x.to(self.device)
         labels = labels.to(self.device)
         preds = model(x)
@@ -117,6 +117,7 @@ class Trainer:
         self.logger.add_text('Config', config, global_step=0)
  
     def fit(self, model, train_loader, val_loader):
+        self.init_training()
         model = model.to(self.device)
         n_epochs = self.num_steps//len(train_loader)
         model.train()
@@ -125,9 +126,9 @@ class Trainer:
         is_config_logged = False
         epoch = 0
         
-        for step in tqdm(range(self.num_steps), desc=f'Train. epoch {epoch}/{n_epochs}, step {step+1}/{self.num_steps}'):
+        for step in tqdm(range(self.num_steps), desc=f'Train. epoch {epoch}/{n_epochs}'):
             epoch = (step//len(train_loader))+1
-            x, label = next(cycle(train_loader))
+            x, label, _ = next(cycle(train_loader))
             self.train_step(x, label, model, optimizer, scheduler)
             
             if not is_config_logged:

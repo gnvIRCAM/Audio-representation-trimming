@@ -26,7 +26,7 @@ def gather_masks(masked_model: nn.Module
 def make_optimizer(
     model: nn.Module, 
     lr: float, 
-    denylist: tp.List[str], 
+    denylist: tp.List[str] = [], 
     exclude_masks: bool = False, 
     include_fm: bool = False
     ) -> Adam:
@@ -38,7 +38,7 @@ def make_optimizer(
     if len(mask_params) and not exclude_masks:
         params.append(mask_params)
     params.append({'params':list(model.head.parameters()), 
-             'name': 'mlp'})
+             'name': 'head'})
     if include_fm:
         params.append({'params':list(model.foundation_model.parameters()), 
                 'name': 'foundation_model'})
