@@ -102,7 +102,6 @@ class Trainer:
                   ):
         if not filename.endswith('.pt'):
             filename+='.pt'
-        filename = os.path.join(self.run_name, filename)
                
         if optimizer is not None:
             torch.save({'model': model.state_dict(), 
