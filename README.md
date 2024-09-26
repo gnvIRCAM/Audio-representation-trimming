@@ -4,12 +4,14 @@ Repository for the paper "Keep what you need : extracting efficient subnetworks 
 
 ## Installation
 
-Along a functional pytorch installation, please run ```pip install -r requirements.txt``` to install the required dependencies.
+Along a functional pytorch installation, please run ` pip install -r requirements.txt ` to install the required dependencies.
 In addition, you will have to install the foundation models from these repositories :
 
 - MusicFM : [https://github.com/minzwon/musicfm](https://github.com/minzwon/musicfm)
 - MSCLAP : [https://github.com/microsoft/CLAP](https://github.com/microsoft/CLAP)
 - Wav2Vec2.0 : see [torchaudio official documentation](https://pytorch.org/audio/main/models.html)
+
+Once installed, create a .env configuration file to add paths to the models' checkpoints (an example of such a file can be found [here](./template.env)).
 
 Datasets can be found at the following links :
 
@@ -105,7 +107,18 @@ python split_to_lmdb --input_path /path/to/dataset_directory --output_path /path
 
 ### Training the model
 
-tba
+Configuration is handled with [gin-config](https://github.com/google/gin-config). To run an experiment you will have to provide the config of the foundation model, of the task, and of the experiment as follow :
+
+```bash
+python train.py --config configs/models/foundation/clap.gin --config configs/tasks/classif.gin --config configs/experiment/mask.gin 
+--run_name path/to/logs --device cuda_device  --db /path/to/lmdb/database --bs batch_size
+```
+
+We also provide scripts to reproduce the results of the paper in the scripts/ directory. In this case, just run :
+
+```bash
+scripts/experiment_name.sh
+```
 
 ### Evaluation
 
@@ -113,4 +126,4 @@ tba
 
 ## Integration with other models
 
-To use our approach with models that are not in this repository, we provide a tutorial with the notebook tba.ipynb
+To use our approach with models that are not in this repository, we provide a tutorial with [this notebook](./notebooks/tutorial.ipynb).

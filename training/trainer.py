@@ -68,7 +68,7 @@ class Trainer:
             eval_metadata = {}
         eval_metadata[step] = {k: v for k, v in eval_data.items()}
         with open(self.eval_metadata_path, 'w') as f:
-            json.dump(eval_metadata, f)
+            json.dump(eval_metadata, f, indent=2)
         
     def train_step(self, x, labels, model, optimizer, scheduler):
         model.train()
