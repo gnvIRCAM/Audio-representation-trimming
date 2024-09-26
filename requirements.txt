@@ -1,2 +1,8 @@
-
+librosa
 lmdb
+gin-config
+scikit-learn
+tqdm
+torcheval
+calflops
+absl-py

@@ -6,7 +6,6 @@ import torch
 import torch.nn as nn 
 from tqdm import tqdm
 import torcheval.metrics 
-import sklearn
 
 @torch.no_grad()
 def compute_accuracy(preds: torch.Tensor, 

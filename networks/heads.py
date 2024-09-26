@@ -1,6 +1,5 @@
 import typing as tp
 
-from einops import rearrange
 import gin
 import torch
 import torch.nn as nn 

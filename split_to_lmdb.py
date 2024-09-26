@@ -37,7 +37,7 @@ flags.DEFINE_string('dataset_name',
                     help="Name of the dataset to be processed \
                         (from \
                         nsynth, gtzan, mtt, \
-                        esc50, us8k, fsd, \
+                        esc, us8k, fsd, \
                         libri, fluent, commands\
                         )")
 flags.DEFINE_integer('num_cores',
@@ -140,6 +140,15 @@ def main(dummy):
     audios = list(map(os.path.abspath, audios))
     print(f'Found  {len(audios)} audio files')
     _, _SR = sf.read(audios[0])
+    _audios = []
+    num_untagged = 0
+    for au in audios:
+        if au in list(labels.keys()):
+            _audios.append(au)
+        else:
+            num_untagged+=1
+    print(f'Found {num_untagged} untagged audio(s) ({round(100*num_untagged/len(audios), 2)}% of the dataset), removing them from dataset')
+    audios = _audios
     metadata = [{"path": audio, "metadata": labels[audio]} for audio in audios]
     audios = list(zip(audios, metadata))
     
