@@ -1,14 +1,17 @@
 LAYER_IDX = -1
-data_sr = 44100
-EMBEDDING_DIM = 1024
+DATA_SR = 44100
+EMBEDDING_DIM = 768
 
 models.make_wav2vec_masks:
     layer_stop_idx = %LAYER_IDX
 
 models.combine_fm_and_head:
     end2end_class = @models.End2EndWav2Vec
-    layer_stop_idx = %LAYER_IDX
+    layer_idx = %LAYER_IDX
     data_sr = %DATA_SR
+
+models.make_masks:
+    mask_builder = @models.make_wav2vec_masks
 
 trim.trim_model:
     trimmer = @trim.trim_wav2vec

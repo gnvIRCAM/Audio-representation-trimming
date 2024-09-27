@@ -1,0 +1,79 @@
+# Macros:
+# ==============================================================================
+DATA_SR = 16000
+EMBEDDING_DIM = 768
+LAYER_IDX = -1
+LR = 0.001
+NUM_CLASSES = 36
+NUM_STEPS = 100000
+SPARSITY_TARGET = 0.5
+SPARSITY_WEIGHT = 100.0
+
+# Parameters for combine_fm_and_head:
+# ==============================================================================
+combine_fm_and_head.data_sr = %DATA_SR
+combine_fm_and_head.end2end_class = @models.End2EndWav2Vec
+combine_fm_and_head.head = @models.MLP()
+combine_fm_and_head.layer_idx = %LAYER_IDX
+
+# Parameters for constant_lr_scheduler:
+# ==============================================================================
+# None.
+
+# Parameters for End2EndWav2Vec:
+# ==============================================================================
+End2EndWav2Vec.time_avg = True
+
+# Parameters for make_cross_entropy_loss:
+# ==============================================================================
+make_cross_entropy_loss.weight = 1
+
+# Parameters for make_losses:
+# ==============================================================================
+make_losses.sparsity_loss = @train.make_sparsity_loss
+make_losses.task_loss = @train.make_cross_entropy_loss
+
+# Parameters for make_masks:
+# ==============================================================================
+make_masks.mask_builder = @models.make_wav2vec_masks
+make_masks.mask_module = @models.MaskModule
+make_masks.skip = False
+
+# Parameters for make_optimizer:
+# ==============================================================================
+make_optimizer.denylist = []
+make_optimizer.exclude_masks = False
+make_optimizer.include_fm = False
+
+# Parameters for make_sparsity_loss:
+# ==============================================================================
+make_sparsity_loss.power = 2
+make_sparsity_loss.target = %SPARSITY_TARGET
+make_sparsity_loss.weight = %SPARSITY_WEIGHT
+
+# Parameters for make_wav2vec_masks:
+# ==============================================================================
+make_wav2vec_masks.allowlist = None
+make_wav2vec_masks.exclude_layers = []
+make_wav2vec_masks.layer_stop_idx = %LAYER_IDX
+
+# Parameters for MaskModule:
+# ==============================================================================
+MaskModule.feature_dim = 1
+
+# Parameters for MLP:
+# ==============================================================================
+MLP.hidden_dims = [1024]
+MLP.input_dim = %EMBEDDING_DIM
+MLP.out_act = None
+MLP.output_dim = %NUM_CLASSES
+
+# Parameters for Trainer:
+# ==============================================================================
+Trainer.log_steps = 200
+Trainer.losses_maker = @train.make_losses
+Trainer.lr = %LR
+Trainer.num_steps = %NUM_STEPS
+Trainer.save_steps = 5000
+Trainer.scheduler_fn = @train.constant_lr_scheduler
+Trainer.val_steps = 5000

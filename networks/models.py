@@ -87,6 +87,8 @@ class End2EndMusicFM(End2EndModel):
             stat_path=os.path.join(musicfm_weights, 'msd_stats.json'),
             model_path=os.path.join(musicfm_weights, 'pretrained_msd.pt'),        
         )
+        if layer_idx!=-1:
+            musicfm.conformer.layers = musicfm.conformer.layers[:layer_idx+1]
         super().__init__(musicfm, head, model_sr=24000, data_sr=data_sr)
         self.layer_idx = layer_idx
         self.time_avg = time_avg
@@ -105,15 +107,16 @@ class End2EndWav2Vec(End2EndModel):
                  layer_idx: int=-1, 
                  time_avg: bool=True) -> None:
         bundle = torchaudio.pipelines.WAV2VEC2_ASR_BASE_960H
-        sr = bundle.sample_rate 
-        gin.bind_parameter('%FM_SR', sr)
+        model_sr = bundle.sample_rate 
         wav2vec = bundle.get_model()
-        super().__init__(wav2vec, head, model_sr=16000, data_sr=data_sr)
+        if layer_idx!=-1:
+            wav2vec.encoder.transformer.layers = wav2vec.encoder.transformer.layers[:layer_idx+1]
+        super().__init__(wav2vec, head, model_sr=model_sr, data_sr=data_sr)
         self.layer_idx = layer_idx
         self.time_avg = time_avg
 
     def get_embedding(self, x: torch.Tensor)->torch.Tensor:
-        emb = self.foundation_model.extract_features(x)[self.layer_idx]
+        emb = self.foundation_model.extract_features(x)[0][self.layer_idx]
         if self.time_avg:
             emb = emb.mean(1) # B T C -> B C
         return emb

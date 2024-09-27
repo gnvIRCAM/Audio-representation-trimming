@@ -37,7 +37,8 @@ class Trainer:
                 self.device='gpu'
             else:
                 self.device = f'cuda:{device}'
-        self.eval_metadata_path = os.path.join(run_name, 'eval.json')
+        self.val_metadata_path = os.path.join(run_name, 'val_metrics.json')
+        self.test_metadata_path = os.path.join(run_name, 'test_metrics.json')
         self.losses = losses_maker(device=self.device)
         self.losses_logs = {loss_name:[] for loss_name in self.losses.keys()}
         self.lr = lr
@@ -53,21 +54,38 @@ class Trainer:
 
     @gin.configurable(module='train', allowlist=['metrics'])
     @torch.no_grad()
-    def val_step(self, step, model: nn.Module, val_loader, metrics):
+    def val_step(self, step, model: nn.Module, val_loader, metrics, 
+                 test_loader=None):
         model.eval()
         eval_data = compute_metrics(model, self.device, val_loader, 
                                     metrics)
         for metric_name, metric_val in eval_data.items():
             self.logger.add_scalar(f'Eval/{metric_name}', metric_val, global_step=step)
 
-        if os.path.isfile(self.eval_metadata_path):
-            with open(self.eval_metadata_path, 'r') as f:
-                eval_metadata = json.load(f)
+        if os.path.isfile(self.val_metadata_path):
+            with open(self.val_metadata_path, 'r') as f:
+                val_metadata = json.load(f)
         else:
-            eval_metadata = {}
-        eval_metadata[step] = {k: v for k, v in eval_data.items()}
-        with open(self.eval_metadata_path, 'w') as f:
-            json.dump(eval_metadata, f, indent=2)
+            val_metadata = {}
+        val_metadata[step] = {k: v for k, v in eval_data.items()}
+        with open(self.val_metadata_path, 'w') as f:
+            json.dump(val_metadata, f, indent=2)
+        
+        if test_loader is not None:
+            test_data = compute_metrics(model, self.device, test_loader, 
+                                        metrics)
+            for metric_name, metric_val in eval_data.items():
+                self.logger.add_scalar(f'Test/{metric_name}', metric_val, global_step=step)
+
+            if os.path.isfile(self.test_metadata_path):
+                with open(self.test_metadata_path, 'r') as f:
+                    test_metadata = json.load(f)
+            else:
+                test_metadata = {}
+            test_metadata[step] = {k: v for k, v in test_data.items()}
+            with open(self.test_metadata_path, 'w') as f:
+                json.dump(test_metadata, f, indent=2)
+            
         
     def train_step(self, x, labels, model, optimizer, scheduler):
         x = x.to(self.device)
@@ -120,7 +138,7 @@ class Trainer:
         with open(os.path.join(self.run_name, 'config.gin'), 'w') as f:
             f.write(gin.operative_config_str())
  
-    def fit(self, model, train_loader, val_loader):
+    def fit(self, model, train_loader, val_loader, test_loader=None):
         self.init_training()
         model = model.to(self.device)
         n_epochs = math.ceil(self.num_steps/len(train_loader))
@@ -145,7 +163,7 @@ class Trainer:
                     
                 if not (step+1)%self.val_steps:
                     model.eval()
-                    self.val_step(step+1, model, val_loader)
+                    self.val_step(step+1, model, val_loader, test_loader=test_loader)
                     model.train()
 
 

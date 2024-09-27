@@ -1,0 +1,2 @@
+Dataset : /fast-1/genova/datasets/commands_lmdb/
+Fold: 0

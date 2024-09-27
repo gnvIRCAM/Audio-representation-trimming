@@ -42,16 +42,22 @@ def main(argv):
         device='cpu'
     else:
         device=f'cuda:{FLAGS.device}'
-    train_loader, val_loader, _, dataset_sr, num_classes = make_loaders(FLAGS.db, FLAGS.bs, num_workers=8, 
+    
+    # Creating loaders    
+    train_loader, val_loader, test_loader, dataset_sr, num_classes = make_loaders(FLAGS.db, FLAGS.bs, num_workers=8, 
                                                      fold=FLAGS.fold)
+    
+    # Load config + create run directory
     gin.parse_config_files_and_bindings(FLAGS.config, bindings=[
         f'BS = {FLAGS.bs}', 
-        f'DATASET_SR = {dataset_sr}', 
+        f'DATA_SR = {dataset_sr}', 
         f'NUM_CLASSES = {num_classes}', 
         f'SPARSITY_TARGET = {FLAGS.sparsity_target}', 
         f'SPARSITY_WEIGHT = {FLAGS.sparsity_weight}'        
     ])
     os.makedirs(FLAGS.run_name, exist_ok=True)
+    
+    # Build model, masks, optionally pre-trim
     model = combine_fm_and_head()
     print(f'Number of parameters : {round(sum([p.numel() for p in model.parameters()])/1e6, 2)}M')
     model = make_masks(model)
@@ -61,15 +67,20 @@ def main(argv):
         model.load_state_dict(weights)
         trim_model(model)
         del weights
+    
+    # Preparing training
     trainer = Trainer(run_name=FLAGS.run_name, device=device)
     with open(os.path.join(FLAGS.run_name, 'data.txt'), 'w') as f:
         f.write(
             f'Dataset : {FLAGS.db}\nFold: {FLAGS.fold}'
         )
+
+    # Train
     trainer.fit(
         model=model, 
         train_loader=train_loader, 
-        val_loader=val_loader
+        val_loader=val_loader, 
+        test_loader=test_loader
     )
 
 
