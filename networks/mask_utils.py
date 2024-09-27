@@ -47,10 +47,17 @@ def sequential_setattr(obj: tp.Any,
             return sequential_setattr(obj[int(name)], res, val)
         
 @gin.configurable(module='models', denylist=['model'])
-def make_masks(model, mask_builder=None, mask_module=None, skip=False):
+def make_masks(
+        model, 
+        mask_builder: tp.Callable[[nn.Module], nn.Module] = None, 
+        mask_module: nn.Module = None, 
+        skip: bool = False
+        ) -> nn.Module:
     if skip:
         return model
-    model.foundation_model = mask_builder(model.foundation_model, mask_module=mask_module)
+    model.foundation_model = mask_builder(
+        model.foundation_model, 
+        mask_module=mask_module)
     return model
 
 @gin.configurable(module='models', denylist=['model'])

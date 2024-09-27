@@ -30,6 +30,11 @@ flags.DEFINE_string('resume', default=None, required=False,
                     help='Resume experiment from corresponding checkpoint')
 flags.DEFINE_string('pretrained_mask', default=None, required=False, 
                     help="Path to checkpoint to use for pre-trimming")
+flags.DEFINE_float('sparsity_target', default=.5, required=False, 
+                   help='Target for the sparsity loss')
+flags.DEFINE_float('sparsity_weight', default=100, required=False, 
+                   help='Weight of the sparsity loss')
+
 
 def main(argv):
     assert FLAGS.config is not None or FLAGS.resume is not None, 'Either a config file or a run dir. should be provided'
@@ -42,7 +47,9 @@ def main(argv):
     gin.parse_config_files_and_bindings(FLAGS.config, bindings=[
         f'BS = {FLAGS.bs}', 
         f'DATASET_SR = {dataset_sr}', 
-        f'NUM_CLASSES = {num_classes}'
+        f'NUM_CLASSES = {num_classes}', 
+        f'SPARSITY_TARGET = {FLAGS.sparsity_target}', 
+        f'SPARSITY_WEIGHT = {FLAGS.sparsity_weight}'        
     ])
     os.makedirs(FLAGS.run_name, exist_ok=True)
     model = combine_fm_and_head()

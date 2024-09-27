@@ -1,8 +1,7 @@
-from itertools import cycle
 import json
+import math
 import numpy as np
 import os
-import time
 import typing as tp
 import sys
 sys.path.append('..')
@@ -10,7 +9,6 @@ sys.path.append('..')
 import gin 
 import torch
 import torch.nn as nn
-from torch.optim import Adam 
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
@@ -125,35 +123,33 @@ class Trainer:
     def fit(self, model, train_loader, val_loader):
         self.init_training()
         model = model.to(self.device)
-        n_epochs = self.num_steps//len(train_loader)
+        n_epochs = math.ceil(self.num_steps/len(train_loader))
         optimizer = make_optimizer(model, self.lr)
         scheduler = self.scheduler_fn(optimizer)
         is_config_logged = False
-        epoch = 0
+        step = 0
         model.train()
-        loader_size = len(train_loader)
-        train_loader = cycle(train_loader)
-        
-        for step in tqdm(range(self.num_steps), desc=f'Train. epoch {epoch}/{n_epochs}'):
-            epoch = (step//loader_size)+1
-            x, label, _ = next(train_loader)
-            self.train_step(x, label, model, optimizer, scheduler)
-            
-            if not is_config_logged:
-                self.log_config()
-                self.save_config()
-                is_config_logged = True
-            
-            if not (step+1)%self.log_steps:
-                self.log_step(step+1, epoch)
+
+        for epoch in range(n_epochs+1):
+            for x, label, _ in tqdm(train_loader, desc=f'Train. epoch {epoch}/{n_epochs}', leave=False):
+                step+=1
+                self.train_step(x, label, model, optimizer, scheduler)
                 
-            if not (step+1)%self.val_steps:
-                model.eval()
-                self.val_step(step+1, model, val_loader)
-                model.train()
+                if not is_config_logged:
+                    self.log_config()
+                    self.save_config()
+                    is_config_logged = True
+                
+                if not (step+1)%self.log_steps:
+                    self.log_step(step+1, epoch)
+                    
+                if not (step+1)%self.val_steps:
+                    model.eval()
+                    self.val_step(step+1, model, val_loader)
+                    model.train()
 
 
-            if not (step+1)%self.save_steps:
-                self.save_state(os.path.join(self.run_name, f'{step+1}.pt'), model, optimizer)
+                if not (step+1)%self.save_steps:
+                    self.save_state(os.path.join(self.run_name, f'{step+1}.pt'), model, optimizer)
         
         self.save_state(os.path.join(self.run_name, f'final.pt'), model)

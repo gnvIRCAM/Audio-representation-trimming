@@ -107,7 +107,7 @@ python split_to_lmdb --input_path /path/to/dataset_directory --output_path /path
 
 ### Training the model
 
-Configuration is handled with [gin-config](https://github.com/google/gin-config). To run an experiment you will have to provide the config of the foundation model, of the task, and of the experiment as follow :
+Configuration is handled with [gin-config](https://github.com/google/gin-config). To run an experiment you will have to provide the configuration files of the foundation model, of the task, and of the experiment :
 
 ```bash
 python train.py --config configs/models/foundation/clap.gin --config configs/tasks/classif.gin --config configs/experiment/mask.gin 

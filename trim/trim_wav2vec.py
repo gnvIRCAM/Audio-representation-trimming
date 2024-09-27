@@ -101,7 +101,7 @@ def _trim_conv(conv_module: nn.Module)->nn.Module:
 
 @gin.configurable(module='trim', denylist=['wav2vec'])
 def trim_wav2vec(wav2vec: nn.Module)->nn.Module:
-    _name = 'network.0'
+    _name = 'foundation_model'
     conv_layers = []
     for conv_block in range(1, 6):
         cur_block = _name+f'.feature_extractor.conv_layers.{conv_block}'

@@ -118,7 +118,7 @@ def _trim_feedforward(feedforward_module: nn.Module)->nn.Module:
 
 @gin.configurable(module='trim', denylist=['musicfm'])
 def trim_musicfm(musicfm: nn.Module, layer_stop_idx: int=-1):
-    _name = 'network.0.conformer.layers'
+    _name = 'foundation_model.conformer.layers'
     trim_layers = []
     for n, m in musicfm.named_modules():
         if _name not in n:
