@@ -2,6 +2,7 @@ from itertools import cycle
 import json
 import numpy as np
 import os
+import time
 import typing as tp
 import sys
 sys.path.append('..')
@@ -71,7 +72,6 @@ class Trainer:
             json.dump(eval_metadata, f, indent=2)
         
     def train_step(self, x, labels, model, optimizer, scheduler):
-        model.train()
         x = x.to(self.device)
         labels = labels.to(self.device)
         preds = model(x)
@@ -117,31 +117,41 @@ class Trainer:
         config = ['```'] + config + ['```']
         config = '\n'.join(config)
         self.logger.add_text('Config', config, global_step=0)
+
+    def save_config(self):
+        with open(os.path.join(self.run_name, 'config.gin'), 'w') as f:
+            f.write(gin.operative_config_str())
  
     def fit(self, model, train_loader, val_loader):
         self.init_training()
         model = model.to(self.device)
         n_epochs = self.num_steps//len(train_loader)
-        model.train()
         optimizer = make_optimizer(model, self.lr)
         scheduler = self.scheduler_fn(optimizer)
         is_config_logged = False
         epoch = 0
+        model.train()
+        loader_size = len(train_loader)
+        train_loader = cycle(train_loader)
         
         for step in tqdm(range(self.num_steps), desc=f'Train. epoch {epoch}/{n_epochs}'):
-            epoch = (step//len(train_loader))+1
-            x, label, _ = next(cycle(train_loader))
+            epoch = (step//loader_size)+1
+            x, label, _ = next(train_loader)
             self.train_step(x, label, model, optimizer, scheduler)
             
             if not is_config_logged:
                 self.log_config()
+                self.save_config()
                 is_config_logged = True
             
             if not (step+1)%self.log_steps:
                 self.log_step(step+1, epoch)
                 
             if not (step+1)%self.val_steps:
+                model.eval()
                 self.val_step(step+1, model, val_loader)
+                model.train()
+
 
             if not (step+1)%self.save_steps:
                 self.save_state(os.path.join(self.run_name, f'{step+1}.pt'), model, optimizer)
