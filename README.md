@@ -122,7 +122,17 @@ scripts/experiment_name.sh
 
 ### Evaluation
 
-tba
+For each downstream task, we compute along training several metrics (e.g. WER for ASR, w-Acc. for classification). Once the training is completed, you can compute the computational metrics (FLOPs, MACs and speed-up) by running :
+
+```bash
+python eval_computation.py --folder path/to/run --device 0
+```
+
+You can also evaluate a signle checkpoint :
+
+```bash
+python eval_computation.py --ckpt path/to/model.pt --device 0
+```
 
 ## Integration with other models
 
